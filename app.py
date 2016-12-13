@@ -34,7 +34,7 @@ def randomstring(length):
 #Bundle PDFs
 #TODO: split into module rather than leave inline
 def bundlePDFs(directory):
-    merger = PdfFileMerger()
+    merger = PdfFileMerger(strict=False)
     tempdir = directory
     PDFs = []
     for filename in os.listdir(tempdir):
@@ -51,7 +51,7 @@ def bundlePDFs(directory):
         current_page = current_page + PdfFileReader(tempdir+'/'+PDFs[index], 'rb').getNumPages()
         index = index + 1
     merger.setPageMode('/UseOutlines')
-    merger.write(tempdir+"\Bundle.pdf")
+    merger.write(os.path.join(tempdir, "Bundle.pdf"))
 
 #SQL
 #TODO: split into module rather than leave inline
@@ -118,7 +118,7 @@ def upload():
             # will basicaly show on the browser the uploaded file
     # Load an html page with a link to each uploaded file
     filenames = []
-    docs = Document.query.order_by(Document.order).all()
+    docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
     for doc in docs:
         filenames.append(doc.filename)
     return render_template('upload.html', filenames=filenames, folder_name=folder_name)
@@ -161,7 +161,7 @@ def additional_upload():
             # will basicaly show on the browser the uploaded file
     # Load an html page with a link to each uploaded file
     filenames = []
-    docs = Document.query.order_by(Document.order).all()
+    docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
     for doc in docs:
         filenames.append(doc.filename)
     return render_template('upload.html', filenames=filenames, folder_name=folder_name)
@@ -192,9 +192,10 @@ def delete_file():
 def update_order():
     sort_order = request.args['order']
     sort_order = ast.literal_eval(sort_order)
+    folder_name = request.args['folder']
     order = 1
     for item in sort_order:
-        DB_entry = Document.query.filter_by(filename=item).first()
+        DB_entry = Document.query.filter_by(filename=item, folder=folder_name).first()
         DB_entry.order = order
         db.session.commit()
         order = order + 1

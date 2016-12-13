@@ -60,7 +60,7 @@
           $.ajax({
             dataType: "json",
             url: $SCRIPT_ROOT + '/update_order',
-            data: {"order": JSON.stringify(array)}
+            data: {"order": JSON.stringify(array), "folder": "{{folder_name}}"}
           });
         }
       });
