@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h3 class="text-muted">Uploaded files</h3>
+        </div>
+        <hr/>
+        <div>
+            This is a list of the files you just uploaded, click on them to load/download them
+            <ul id="files">
+                {% for file in filenames %}
+                <li id="{{file}}"><a href="{{url_for('uploaded_file', filename=file, folder_name=folder_name)}}">{{file}}</a>&nbsp;
+                    <form action="delete_file" method="post" enctype="multipart/form-data">
+                        <input type="hidden" value="{{folder_name}}" name="folder_name" />
+                        <input type="hidden" value="{{file}}" name="file_name" />
+                        <input type="submit" value="Delete file" class="span2">
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="header">
+            <h3 class="text-muted">Upload additional files</h3>
+        </div>
+        <hr/>
+        <form action="addtional_upload" method="post" enctype="multipart/form-data">
+            <input type="file" multiple="" name="file[]" class="span3" /><br />
+            <input type="hidden" value="{{folder_name}}" name="folder_name" />
+            <input type="submit" value="Upload" class="span2">
+        </form>
+        <div class="header">
+            <h3 class="text-muted">Bundle files</h3>
+        </div>
+        <hr/>
+        <form action="create_bundle" method="post" enctype="multipart/form-data">
+            <input type="hidden" value="{{folder_name}}" name="folder_name" />
+            <input type="submit" value="Create bundle" class="span2">
+        </form>
+    </div>
+    </div>
+</body>
+<script type=text/javascript>
+  $SCRIPT_ROOT = {{ request.script_root|tojson|safe }};
+</script>
+<script>
+  $(document).ready(function(){
+      $("#files").sortable({
+          stop : function(event, ui){
+            array = $(this).sortable('toArray');
+            console.log(array);
+          $.ajax({
+            dataType: "json",
+            url: $SCRIPT_ROOT + '/update_order',
+            data: {"order": JSON.stringify(array)}
+          });
+        }
+      });
+    $("#sortable").disableSelection();
+  });
+</script>
+</html>
