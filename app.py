@@ -110,6 +110,7 @@ def upload():
         full_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
     # Create that folder
     os.makedirs(full_path)
+    file_order = 1
     for file in uploaded_files:
         # Check if the file is one of the allowed types/extensions
         if file and allowed_file(file.filename):
@@ -121,9 +122,10 @@ def upload():
             # Save the filename into a list, we'll use it later
             #filenames.append(filename)
             # Add required info to DB
-            document = Document(filename, folder_name, '', '999')
+            document = Document(filename, folder_name, '', file_order)
             db.session.add(document)
             db.session.commit()
+            file_order = file_order + 1
             # Redirect the user to the uploaded_file route, which
             # will basicaly show on the browser the uploaded file
     # Load an html page with a link to each uploaded file
@@ -153,6 +155,7 @@ def additional_upload():
     # Append files already in folder_name to filenames
     filenames = os.listdir(full_path)
     # Process newly-uplaoded files
+    file_order = Document.query.filter_by(folder=folder_name).order_by(Document.order.desc()).first().order + 1
     for file in uploaded_files:
         # Check if the file is one of the allowed types/extensions
         if file and allowed_file(file.filename):
@@ -164,9 +167,10 @@ def additional_upload():
             # Save the filename into a list, we'll use it later
             #filenames.append(filename)
             # Add required info to DB
-            document = Document(filename, folder_name, '', '999')
+            document = Document(filename, folder_name, '', file_order)
             db.session.add(document)
             db.session.commit()
+            file_order = file_order + 1
             # Redirect the user to the uploaded_file route, which
             # will basicaly show on the browser the uploaded file
     # Load an html page with a link to each uploaded file
@@ -211,10 +215,18 @@ def delete_file():
     file_name = request.form.get('file_name')
     folder_name = request.form.get('folder_name')
     full_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
+    #TODO:
+    #Deleting a file needs to decrement the order of all subsequent files by 1
     os.remove(os.path.join(full_path, file_name))
     filenames = os.listdir(full_path)
-    DB_entry = Document.query.filter_by(filename=file_name, folder=folder_name).delete()
+    deleted_item_order = Document.query.filter_by(filename=file_name, folder=folder_name).first().order
+    db.engine.execute("UPDATE document set [order] = [order] - 1 where [order] >" + str(deleted_item_order))
+    Document.query.filter_by(filename=file_name, folder=folder_name).delete()
     db.session.commit()
+    filenames = []
+    docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
+    for doc in docs:
+        filenames.append(doc.filename)
     return render_template('upload.html', filenames=filenames, folder_name=folder_name)
 
 @app.route('/update_order')
