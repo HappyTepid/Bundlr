@@ -34,15 +34,15 @@ def randomstring(length):
 
 #Bundle PDFs
 #TODO: split into module rather than leave inline
-def bundlePDFs(directory):
+def bundlePDFs(directory, folder_name):
     merger = PdfFileMerger(strict=False)
     tempdir = directory
     PDFs = []
     global error
     error = []
-    for filename in os.listdir(tempdir):
-        if filename.endswith('.pdf'):
-            PDFs.append(filename)
+    docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
+    for doc in docs:
+        PDFs.append(doc.filename)
     index = 0
     current_page = 0
     for PDF in PDFs:
@@ -155,7 +155,11 @@ def additional_upload():
     # Append files already in folder_name to filenames
     filenames = os.listdir(full_path)
     # Process newly-uplaoded files
-    file_order = Document.query.filter_by(folder=folder_name).order_by(Document.order.desc()).first().order + 1
+    try:
+        highest_order = Document.query.filter_by(folder=folder_name).order_by(Document.order.desc()).first().order
+    except:
+        highest_order = 0
+    file_order = highest_order + 1
     for file in uploaded_files:
         # Check if the file is one of the allowed types/extensions
         if file and allowed_file(file.filename):
@@ -200,7 +204,7 @@ def create_bundle():
             error.append(PDF + " is malformed, please convert it and re-upload!")
     # Create bundle
     try:
-        bundlePDFs(directory)
+        bundlePDFs(directory, folder_name)
     except:
         #Returned by bundlePDFs - there has to be a better way to handle this though...
         global error
