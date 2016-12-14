@@ -16,6 +16,7 @@ from flask_sqlalchemy import SQLAlchemy
 
 # Initialize the Flask application
 app = Flask(__name__)
+app.secret_key = 'dfghndtudrug87vdfsghdf'
 
 # This is the path to the upload directory
 app.config['UPLOAD_FOLDER'] = r'C:\Users\felix\Downloads\cc3093b2d8cced6dcf38-b473c48d80fc30e92d3c12fad90eb1991db0442d\uploads'
@@ -37,6 +38,8 @@ def bundlePDFs(directory):
     merger = PdfFileMerger(strict=False)
     tempdir = directory
     PDFs = []
+    global error
+    error = []
     for filename in os.listdir(tempdir):
         if filename.endswith('.pdf'):
             PDFs.append(filename)
@@ -47,9 +50,16 @@ def bundlePDFs(directory):
         case_no = m.group(1)
         bookmark_title = 'Case '+str(case_no)
         merger.addBookmark(bookmark_title, current_page)
-        merger.append(PdfFileReader(tempdir+'/'+PDFs[index], 'rb'))
+        try:
+            merger.append(PdfFileReader(tempdir+'/'+PDFs[index], 'rb'))
+        except:
+            error.append('File ' + PDFs[index] + ' is an invalid PDF. Convert it using Adobe Reader and re-upload it.')
+            index = index + 1
+            continue
         current_page = current_page + PdfFileReader(tempdir+'/'+PDFs[index], 'rb').getNumPages()
         index = index + 1
+    if error:
+        raise ValueError("invalid files detected!")
     merger.setPageMode('/UseOutlines')
     merger.write(os.path.join(tempdir, "Bundle.pdf"))
 
@@ -172,9 +182,29 @@ def create_bundle():
     folder_name = request.form.get('folder_name')
     full_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
     directory = full_path
-    bundlePDFs(directory)
-    return send_from_directory(full_path,
-                               'Bundle.pdf')
+    # Verify files are valid
+    PDFs = []
+    error = []
+    for filename in os.listdir(directory):
+        if filename.endswith('.pdf'):
+            PDFs.append(filename)
+    for PDF in PDFs:
+        try:
+            with open(os.path.join(directory, PDF), "rb") as f:
+                input = PdfFileReader(f, "rb")
+        except:
+            error.append(PDF + " is malformed, please convert it and re-upload!")
+    # Create bundle
+    try:
+        bundlePDFs(directory)
+    except:
+        #Returned by bundlePDFs - there has to be a better way to handle this though...
+        global error
+        print(error, file=sys.stderr)
+        return render_template('upload.html', filenames=PDFs, folder_name=folder_name, error=error)
+    else:
+        return send_from_directory(full_path,
+                                'Bundle.pdf')
 
 @app.route('/delete_file', methods=['POST'])
 def delete_file():
@@ -183,8 +213,7 @@ def delete_file():
     full_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
     os.remove(os.path.join(full_path, file_name))
     filenames = os.listdir(full_path)
-    DB_entry = Document.query.filter_by(filename=file_name).first()
-    db.session.delete(DB_entry)
+    DB_entry = Document.query.filter_by(filename=file_name, folder=folder_name).delete()
     db.session.commit()
     return render_template('upload.html', filenames=filenames, folder_name=folder_name)
 

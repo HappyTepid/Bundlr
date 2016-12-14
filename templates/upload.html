@@ -10,6 +10,11 @@
 
 <body>
     <div class="container">
+      {% if error %}
+      {% for e in error %}
+        <p><strong>Error:</strong> {{ e }}
+      {% endfor %}
+      {% endif %}
         <div class="header">
             <h3 class="text-muted">Uploaded files</h3>
         </div>
