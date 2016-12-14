@@ -20,7 +20,7 @@
         </div>
         <hr/>
         <div>
-            This is a list of the files you just uploaded, click on them to load/download them
+            This is a list of the files you just uploaded, click on them to load/download them or drag them to re-arrange them in the order you desire.
             <ul id="files">
                 {% for file in filenames %}
                 <li id="{{file}}"><a href="{{url_for('uploaded_file', filename=file, folder_name=folder_name)}}">{{file}}</a>&nbsp;

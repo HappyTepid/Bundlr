@@ -208,7 +208,6 @@ def create_bundle():
     except:
         #Returned by bundlePDFs - there has to be a better way to handle this though...
         global error
-        print(error, file=sys.stderr)
         return render_template('upload.html', filenames=PDFs, folder_name=folder_name, error=error)
     else:
         return send_from_directory(full_path,
