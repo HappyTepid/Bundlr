@@ -30,7 +30,7 @@
             This is a list of the files you just uploaded, click on them to load/download them or drag them to re-arrange them in the order you desire.
             <ul id="files">
                 {% for file in filenames %}
-                <li id="{{file}}"><a href="{{url_for('uploaded_file', filename=file, folder_name=folder_name)}}">{{file}}</a>&nbsp;
+                <li id="{{file}}"><a href="{{url_for('uploaded_file', filename=file, folder_name=folder_name)}}" target="_blank">{{file}}</a>&nbsp;
                     <form action="delete_file" method="post" enctype="multipart/form-data">
                         <input type="hidden" value="{{folder_name}}" name="folder_name" />
                         <input type="hidden" value="{{file}}" name="file_name" />
