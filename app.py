@@ -11,6 +11,7 @@ from string import ascii_uppercase
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 from werkzeug import secure_filename
 from PyPDF2 import PdfFileMerger, PdfFileReader
+import pdfkit
 import re
 from flask_sqlalchemy import SQLAlchemy
 
@@ -212,6 +213,27 @@ def create_bundle():
     else:
         return send_from_directory(full_path,
                                 'Bundle.pdf')
+
+@app.route('/add_comments', methods=['POST'])
+def add_comments():
+    folder_name = request.form.get('folder_name')
+    comments = request.form.get('comments')
+    filename = request.form.get('filename')
+    base_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
+    pdfkit.from_string(comments, base_path+'/'+filename+'.pdf')
+    try:
+        highest_order = Document.query.filter_by(folder=folder_name).order_by(Document.order.desc()).first().order
+    except:
+        highest_order = 0
+    file_order = highest_order + 1
+    document = Document(filename+'.pdf', folder_name, '', file_order)
+    db.session.add(document)
+    db.session.commit()
+    filenames = []
+    docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
+    for doc in docs:
+        filenames.append(doc.filename)
+    return render_template('upload.html', filenames=filenames, folder_name=folder_name)
 
 @app.route('/delete_file', methods=['POST'])
 def delete_file():
