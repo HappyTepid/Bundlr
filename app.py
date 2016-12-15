@@ -8,12 +8,19 @@ from string import ascii_uppercase
 # will be used to redirect the user once the upload is done
 # and send_from_directory will help us to send/show on the
 # browser the file that the user just uploaded
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, session
 from werkzeug import secure_filename
 from PyPDF2 import PdfFileMerger, PdfFileReader
 import pdfkit
 import re
 from flask_sqlalchemy import SQLAlchemy
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField
+from wtforms.validators import DataRequired, required
+
+class addComments(FlaskForm):
+    filename = StringField('File name', validators=[DataRequired()])
+    filecomments = TextAreaField('File comments', validators=[DataRequired()])
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -91,7 +98,8 @@ class Document(db.Model):
 # value of the operation
 @app.route('/')
 def index():
-    return render_template('index.html')
+    #return render_template('index.html')
+    return render_template('upload.html', filenames=[], folder_name='')
 
 
 # Route that will process the file upload
@@ -111,6 +119,7 @@ def upload():
         full_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
     # Create that folder
     os.makedirs(full_path)
+    session['folder_name'] = folder_name
     file_order = 1
     for file in uploaded_files:
         # Check if the file is one of the allowed types/extensions
@@ -134,6 +143,7 @@ def upload():
     docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
     for doc in docs:
         filenames.append(doc.filename)
+        #return render_template('upload.html', filenames=filenames, folder_name=folder_name, form=form)
     return render_template('upload.html', filenames=filenames, folder_name=folder_name)
 
 # This route is expecting a parameter containing the name
@@ -212,7 +222,7 @@ def create_bundle():
         return render_template('upload.html', filenames=PDFs, folder_name=folder_name, error=error)
     else:
         return send_from_directory(full_path,
-                                'Bundle.pdf')
+                                'Bundle.pdf', as_attachment=True)
 
 @app.route('/add_comments', methods=['POST'])
 def add_comments():
@@ -265,6 +275,31 @@ def update_order():
         DB_entry.order = order
         db.session.commit()
         order = order + 1
+
+@app.route('/write_comments', methods=['GET', 'POST'])
+def write_comments():
+    form = addComments()
+    if form.validate_on_submit():
+        folder_name = session['folder_name']
+        comments = form.filecomments.data
+        filename = form.filename.data
+        base_path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name)
+        pdfkit.from_string(comments, base_path+'/'+filename+'.pdf')
+        try:
+            highest_order = Document.query.filter_by(folder=folder_name).order_by(Document.order.desc()).first().order
+        except:
+            highest_order = 0
+        file_order = highest_order + 1
+        document = Document(filename+'.pdf', folder_name, '', file_order)
+        db.session.add(document)
+        db.session.commit()
+        filenames = []
+        docs = Document.query.filter_by(folder=folder_name).order_by(Document.order).all()
+        for doc in docs:
+            filenames.append(doc.filename)
+        return render_template('upload.html', filenames=filenames, folder_name=folder_name)
+    else:
+        return render_template('write_comments.html', form=form)
 
 if __name__ == '__main__':
     app.run(

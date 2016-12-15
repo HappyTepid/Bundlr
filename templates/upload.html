@@ -2,7 +2,12 @@
 <html lang="en">
 
 <head>
-    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet">
+  <link rel='stylesheet' href="{{ url_for('static', filename='font-awesome/css/font-awesome.min.css')}}">
+  <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+<!-- Latest compiled and minified JavaScript -->
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
@@ -16,18 +21,24 @@
 </head>
 
 <body>
+  <div class="navbar" role="navigation">
+  <div>
+      <p class="navbar-brand text-muted">Hidden Agenda</p>
+  </div>
+  </div>
     <div class="container">
       {% if error %}
       {% for e in error %}
         <p><strong>Error:</strong> {{ e }}
       {% endfor %}
       {% endif %}
+      {% if filenames %}
         <div class="header">
             <h3 class="text-muted">Uploaded files</h3>
         </div>
         <hr/>
         <div>
-            This is a list of the files you just uploaded, click on them to load/download them or drag them to re-arrange them in the order you desire.
+            This is a list of the files you have uploaded, click on them to load/download them or drag them to re-arrange them in the order you desire.
             <ul id="files">
                 {% for file in filenames %}
                 <li id="{{file}}"><a href="{{url_for('uploaded_file', filename=file, folder_name=folder_name)}}" target="_blank">{{file}}</a>&nbsp;
@@ -40,36 +51,54 @@
                 {% endfor %}
             </ul>
         </div>
+        {% endif %}
+
+
+      <div id="Upload_more">
         <div class="header">
+          {% if filenames %}
             <h3 class="text-muted">Upload additional files</h3>
+          {% else %}
+            <h3 class="text-muted">Upload files</h3>
+          {% endif %}
         </div>
         <hr/>
+        {% if filenames %}
         <form action="addtional_upload" method="post" enctype="multipart/form-data">
             <input type="file" multiple="" name="file[]" class="span3" /><br />
             <input type="hidden" value="{{folder_name}}" name="folder_name" />
             <input type="submit" value="Upload" class="span2">
         </form>
+        {% else %}
+        <form action="upload" method="post" enctype="multipart/form-data">
+            <input type="file" multiple="" name="file[]" class="span3" /><br />
+            <input type="hidden" value="{{folder_name}}" name="folder_name" />
+            <input type="submit" value="Upload" class="span2">
+        </form>
+        {% endif %}
+        </div>
+
+
+      <div class="row">
+        <div class="col-md-6" id="add_comments">
         <div class="header">
             <h3 class="text-muted">Add comments</h3>
         </div>
         <hr/>
-        <form action="add_comments" method="post" enctype="multipart/form-data">
-            <p>Please enter any comments below. Once you click 'Add', these will be converted to a PDF page which will appear above and can be re-ordered as desired.</p>
-            <p>File name:</p>
-            <input type="text" name="filename" class="span3" maxlength="50" /><br /><br />
-            <p>Comments:</p>
-            <textarea name="comments" cols="60" rows="4" /></textarea><br /><br />
-            <input type="hidden" value="{{folder_name}}" name="folder_name" />
-            <input type="submit" value="Add comments" class="span2">
-        </form>
+        <a class="btn btn-primary" href="{{url_for('write_comments')}}"><i class="fa fa-comment" aria-hidden="true"></i>&nbsp;&nbsp;Add comments</a>
+        </div>
+        <div class="col-md-6" id="bundle_files">
         <div class="header">
             <h3 class="text-muted">Bundle files</h3>
         </div>
         <hr/>
         <form action="create_bundle" method="post" enctype="multipart/form-data">
             <input type="hidden" value="{{folder_name}}" name="folder_name" />
-            <input type="submit" value="Create bundle" class="span2">
+            <input class="btn btn-success" type="submit" value="Create bundle" class="span2">
         </form>
+    </div>
+    </div>
+    </div>
     </div>
     </div>
 </body>
